@@ -21,6 +21,12 @@ description:         Please see the README on GitHub at <https://github.com/aisk
 dependencies:
 - base >= 4.7 && < 5
 - request
+- aeson
+- text
+- containers
+- bytestring
+- haskeline
+- process
 
 ghc-options:
 - -Wall
