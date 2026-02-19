@@ -12,7 +12,7 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Provider (LLMProvider (..))
-import Tool (ToolDef (..), ToolRegistry, runTool)
+import Tool (ToolRegistry, runTool)
 import Types
 
 data Agent p = Agent
