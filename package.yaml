@@ -25,7 +25,9 @@ dependencies:
 - text
 - containers
 - bytestring
-- haskeline
+- brick
+- vty
+- vty-crossplatform
 - process
 
 ghc-options:
