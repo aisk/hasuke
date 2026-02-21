@@ -24,8 +24,8 @@ data Agent p = Agent
   }
 
 -- Process one user turn, update the session, and return the reply
-runTurn :: LLMProvider p => Agent p -> Text -> IO (Either Text Text)
-runTurn agent userInput = do
+runTurn :: LLMProvider p => Agent p -> Text -> (Text -> IO ()) -> IO (Either Text Text)
+runTurn agent userInput onText = do
   history <- getHistory agent.session
   let initMsgs = Message System (String agent.systemPrompt)
                : history
@@ -35,7 +35,7 @@ runTurn agent userInput = do
     go :: [Message] -> Int -> IO (Either Text Text)
     go _    0 = return (Left "Max iterations reached")
     go msgs n = do
-      result <- chat agent.provider msgs (Map.elems agent.registry)
+      result <- chat agent.provider msgs (Map.elems agent.registry) onText
       case result of
         Left err -> return (Left err)
         Right resp

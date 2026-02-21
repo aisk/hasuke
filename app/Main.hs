@@ -12,6 +12,7 @@ import Control.Monad.IO.Class (liftIO)
 import System.Console.Haskeline
 import System.Environment (lookupEnv)
 import System.Exit (die)
+import System.IO (BufferMode (..), hSetBuffering, stdout)
 
 defaultPrompt :: T.Text
 defaultPrompt =
@@ -21,6 +22,7 @@ defaultPrompt =
 
 main :: IO ()
 main = do
+  hSetBuffering stdout NoBuffering
   creds   <- loadCreds
   apiUrl <- maybe "https://api.anthropic.com" T.pack <$> lookupEnv "ANTHROPIC_BASE_URL"
   let cfg   = ProviderConfig creds apiUrl "claude-sonnet-4-6"
@@ -41,9 +43,9 @@ chatLoop agent = runInputT defaultSettings loop
           | input `elem` ["exit", "quit"] -> return ()
           | null input                    -> loop
           | otherwise -> do
-              result <- liftIO $ runTurn agent (T.pack input)
+              result <- liftIO $ runTurn agent (T.pack input) TIO.putStr
               case result of
-                Right text -> liftIO $ TIO.putStrLn text
+                Right _ -> liftIO $ TIO.putStrLn ""
                 Left  err  -> liftIO $ TIO.putStrLn ("Error: " <> err)
               loop
 

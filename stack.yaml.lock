@@ -5,15 +5,15 @@
 
 packages:
 - completed:
-    commit: 15b430cdabd18461e9841ca16436d18c1e3ddd8e
+    commit: 793c2e0b56bc17a2c199462ce4123b3c3b7af8b3
     git: https://github.com/aisk/haskell-request
     name: request
     pantry-tree:
-      sha256: 3cc2ba6889a1a18ca238a1a1a00e36802084204098150a09d3a4d9cf81e76ee6
-      size: 476
+      sha256: 798db221d6d10a15edbac659d7021f8683bdcf765b78a8a4086e6168facaa6c4
+      size: 540
     version: 0.4.0.0
   original:
-    commit: 15b430cdabd18461e9841ca16436d18c1e3ddd8e
+    commit: 793c2e0b56bc17a2c199462ce4123b3c3b7af8b3
     git: https://github.com/aisk/haskell-request
 snapshots:
 - completed:
