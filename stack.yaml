@@ -41,7 +41,7 @@ packages:
 #
 extra-deps:
 - git: https://github.com/aisk/haskell-request
-  commit: 793c2e0b56bc17a2c199462ce4123b3c3b7af8b3
+  commit: e47be046297cf993b0150ca694a9347b6fe4fde6
 
 # Override default flag values for project packages and extra-deps
 # flags: {}
