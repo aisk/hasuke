@@ -18,10 +18,18 @@ import Types
 data Agent p = Agent
   { provider      :: p
   , registry      :: ToolRegistry
+  , confirm       :: ToolCall -> IO Bool
   , systemPrompt  :: Text
   , maxIterations :: Int
   , session       :: Session
   }
+
+confirmAndRun :: (ToolCall -> IO Bool) -> ToolRegistry -> ToolCall -> IO (Either Text Text)
+confirmAndRun confirmFn reg tc = do
+  ok <- confirmFn tc
+  if ok
+    then runTool reg tc
+    else return (Left "User declined to execute this tool.")
 
 -- Process one user turn, update the session, and return the reply
 runTurn :: LLMProvider p => Agent p -> Text -> (Text -> IO ()) -> IO (Either Text Text)
@@ -49,7 +57,7 @@ runTurn agent userInput onText = do
               return (Right reply)
           | otherwise -> do
               -- Tool calls present: execute them, append results, and loop
-              toolResults <- mapM (runTool agent.registry) resp.toolCalls
+              toolResults <- mapM (confirmAndRun agent.confirm agent.registry) resp.toolCalls
               let newMsgs = msgs
                     ++ [toAssistantMsg resp]
                     ++ map toToolResultMsg (zip resp.toolCalls toolResults)

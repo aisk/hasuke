@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
@@ -5,20 +6,32 @@ module Main (main) where
 import Agent (Agent (..), runTurn)
 import Provider (AnthropicProvider (..), LLMProvider)
 import Tool (execTool, fromList, readFileTool, writeFileTool)
-import Types (Credentials (..), ProviderConfig (..), newSession)
+import Types (Credentials (..), ProviderConfig (..), ToolCall (..), newSession)
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Control.Monad.IO.Class (liftIO)
 import System.Console.Haskeline
 import System.Environment (lookupEnv)
 import System.Exit (die)
-import System.IO (BufferMode (..), hSetBuffering, stdout)
+import System.IO (BufferMode (..), hFlush, hSetBuffering, stdout)
 
 defaultPrompt :: T.Text
 defaultPrompt =
   "You are a helpful AI assistant with access to tools: \
   \read_file (read files), write_file (write files), exec (run shell commands). \
   \Be concise and accurate."
+
+confirmTool :: ToolCall -> IO Bool
+confirmTool tc = do
+  TIO.putStrLn ""
+  TIO.putStr ("Tool call: " <> tc.name <> " ")
+  BSLC.putStrLn (Aeson.encode tc.arguments)
+  TIO.putStr "Execute? [Y/n] "
+  hFlush stdout
+  answer <- getLine
+  return (answer `notElem` ["n", "N"])
 
 main :: IO ()
 main = do
@@ -29,7 +42,7 @@ main = do
       prov  = AnthropicProvider cfg
       tools = fromList [readFileTool, writeFileTool, execTool]
   sess <- newSession
-  let agent = Agent prov tools defaultPrompt 10 sess
+  let agent = Agent prov tools confirmTool defaultPrompt 10 sess
   chatLoop agent
 
 chatLoop :: LLMProvider p => Agent p -> IO ()
