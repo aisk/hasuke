@@ -8,6 +8,7 @@ module UI
   ) where
 
 import Agent (Agent (..), runTurn)
+import Markdown (mdAttrs, renderMarkdown)
 import Provider (LLMProvider)
 import Types (Role (..), ToolCall (..))
 
@@ -63,11 +64,11 @@ userAttr :: BA.AttrName
 userAttr = BA.attrName "user"
 
 theMap :: BA.AttrMap
-theMap = BA.attrMap V.defAttr
+theMap = BA.attrMap V.defAttr $
   [ (userAttr,            V.defAttr `V.withStyle` V.standout)
   , (BWE.editAttr,        V.defAttr)
   , (BWE.editFocusedAttr, V.defAttr)
-  ]
+  ] ++ mdAttrs
 
 -- ---------------------------------------------------------------------------
 -- Drawing
@@ -78,10 +79,8 @@ renderEntry (ChatEntry User t)      = BWC.vBox
   [ BWC.withAttr userAttr $ BWC.padRight BWC.Max $ BWC.txtWrap ("👤 " <> t)
   , BWC.txt "\8203"
   ]
-renderEntry (ChatEntry Assistant t) = BWC.vBox
-  [ BWC.padRight BWC.Max $ BWC.txtWrap ("🤖 " <> t)
-  , BWC.txt "\8203"
-  ]
+renderEntry (ChatEntry Assistant t) = BWC.vBox $
+  BWC.txt "🤖" : renderMarkdown t ++ [BWC.txt "\8203"]
 renderEntry (ChatEntry System _)    = BWC.emptyWidget
 
 drawUI :: AppState p -> [BT.Widget Name]
@@ -94,7 +93,7 @@ drawUI st = [BWC.vBox [chatArea, BWC.txt "\8203", inputArea, statusBar]]
     streamingWidget :: [BT.Widget Name]
     streamingWidget
       | T.null st.streaming = []
-      | otherwise           = [BWC.padRight BWC.Max $ BWC.txtWrap ("🤖 " <> st.streaming)]
+      | otherwise           = BWC.txt "🤖" : renderMarkdown st.streaming
 
     statusBar :: BT.Widget Name
     statusBar = BWC.vLimit 1 $ case st.appMode of

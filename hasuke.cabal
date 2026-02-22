@@ -25,6 +25,7 @@ source-repository head
 library
   exposed-modules:
       Agent
+      Markdown
       Provider
       Tool
       Types
@@ -41,7 +42,9 @@ library
     , base >=4.7 && <5
     , brick
     , bytestring
+    , cmark-gfm
     , containers
+    , microlens
     , process
     , request
     , text
@@ -63,8 +66,10 @@ executable hasuke-exe
     , base >=4.7 && <5
     , brick
     , bytestring
+    , cmark-gfm
     , containers
     , hasuke
+    , microlens
     , process
     , request
     , text
@@ -87,8 +92,10 @@ test-suite hasuke-test
     , base >=4.7 && <5
     , brick
     , bytestring
+    , cmark-gfm
     , containers
     , hasuke
+    , microlens
     , process
     , request
     , text
