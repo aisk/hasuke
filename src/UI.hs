@@ -29,7 +29,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Graphics.Vty as V
 import Graphics.Vty.CrossPlatform (mkVty)
-import Graphics.Vty.Config (defaultConfig)
+import Graphics.Vty.Config (defaultConfig, configInputMap)
 
 data Name = ChatViewport | InputEditor
   deriving (Eq, Ord, Show)
@@ -60,13 +60,9 @@ data AppState p = AppState
 -- Attributes
 -- ---------------------------------------------------------------------------
 
-userAttr :: BA.AttrName
-userAttr = BA.attrName "user"
-
 theMap :: BA.AttrMap
 theMap = BA.attrMap V.defAttr $
-  [ (userAttr,            V.defAttr `V.withStyle` V.standout)
-  , (BWE.editAttr,        V.defAttr)
+  [ (BWE.editAttr,        V.defAttr)
   , (BWE.editFocusedAttr, V.defAttr)
   ] ++ mdAttrs
 
@@ -76,11 +72,13 @@ theMap = BA.attrMap V.defAttr $
 
 renderEntry :: ChatEntry -> BT.Widget Name
 renderEntry (ChatEntry User t)      = BWC.vBox
-  [ BWC.withAttr userAttr $ BWC.padRight BWC.Max $ BWC.txtWrap ("👤 " <> t)
+  [ B.border $ BWC.padRight BWC.Max $ BWC.txtWrap t
   , BWC.txt "\8203"
   ]
-renderEntry (ChatEntry Assistant t) = BWC.vBox $
-  BWC.txt "🤖" : renderMarkdown t ++ [BWC.txt "\8203"]
+renderEntry (ChatEntry Assistant t) = BWC.vBox
+  [ BWC.padLeftRight 1 $ BWC.vBox $ renderMarkdown t
+  , BWC.txt "\8203"
+  ]
 renderEntry (ChatEntry System _)    = BWC.emptyWidget
 
 drawUI :: AppState p -> [BT.Widget Name]
@@ -93,7 +91,9 @@ drawUI st = [BWC.vBox [chatArea, BWC.txt "\8203", inputArea, statusBar]]
     streamingWidget :: [BT.Widget Name]
     streamingWidget
       | T.null st.streaming = []
-      | otherwise           = BWC.txt "🤖" : renderMarkdown st.streaming
+      | otherwise           =
+          [ BWC.padLeftRight 1 $ BWC.vBox $ renderMarkdown st.streaming
+          ]
 
     statusBar :: BT.Widget Name
     statusBar = BWC.vLimit 1 $ case st.appMode of
@@ -146,8 +146,8 @@ handleEvent :: LLMProvider p => BT.BrickEvent Name AppEvent -> BT.EventM Name (A
 -- App channel events are handled regardless of mode
 handleEvent (BT.AppEvent ae) = handleAppEv ae
 
--- Esc always quits
-handleEvent (BT.VtyEvent (V.EvKey V.KEsc [])) = Brick.halt
+-- Ctrl+C always quits
+handleEvent (BT.VtyEvent (V.EvKey (V.KChar 'c') [V.MCtrl])) = Brick.halt
 
 -- Shift+Enter inserts a newline in NormalMode
 handleEvent (BT.VtyEvent (V.EvKey V.KEnter [V.MShift])) = do
@@ -227,6 +227,7 @@ runUI agent chan = do
         , agentRef    = agent
         , evChan      = chan
         }
-  vty <- mkVty defaultConfig
-  _ <- BM.customMain vty (mkVty defaultConfig) (Just chan) theApp initialState
+  let cfg = defaultConfig { configInputMap = [(Nothing, "\ESC[27;2;13~", V.EvKey V.KEnter [V.MShift])] }
+  vty <- mkVty cfg
+  _ <- BM.customMain vty (mkVty cfg) (Just chan) theApp initialState
   return ()
