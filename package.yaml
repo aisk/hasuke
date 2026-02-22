@@ -29,6 +29,8 @@ dependencies:
 - vty
 - vty-crossplatform
 - process
+- cmark-gfm
+- microlens
 
 ghc-options:
 - -Wall
