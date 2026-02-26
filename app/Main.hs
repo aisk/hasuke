@@ -111,6 +111,11 @@ mkRenderer Bat = do
         , cleanup = cleanupRenderer
         }
 
+withRenderer :: RenderMode -> (Renderer -> IO a) -> IO a
+withRenderer mode action = do
+  renderer <- mkRenderer mode
+  action renderer `finally` cleanup renderer
+
 confirmTool :: ToolCall -> IO Bool
 confirmTool tc = do
   TIO.putStrLn ""
@@ -125,19 +130,18 @@ main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
   renderMode <- detectRenderMode
-  renderer <- mkRenderer renderMode
   creds   <- loadCreds
   apiUrl <- maybe "https://api.anthropic.com" T.pack <$> lookupEnv "ANTHROPIC_BASE_URL"
   let cfg   = ProviderConfig creds apiUrl "claude-sonnet-4-6"
       prov  = AnthropicProvider cfg
       tools = fromList [readFileTool, writeFileTool, execTool]
   sess <- newSession
-  let systemPrompt = buildSystemPrompt renderMode
-      agent = Agent prov tools confirmTool systemPrompt 10 sess
-  chatLoop agent renderer `finally` cleanup renderer
+  let sysPrompt = buildSystemPrompt renderMode
+      agent = Agent prov tools confirmTool sysPrompt 10 sess
+  chatLoop agent renderMode
 
-chatLoop :: LLMProvider p => Agent p -> Renderer -> IO ()
-chatLoop agent renderer = runInputT defaultSettings loop
+chatLoop :: LLMProvider p => Agent p -> RenderMode -> IO ()
+chatLoop agent renderMode = runInputT defaultSettings loop
   where
     loop = do
       minput <- getInputLine "> "
@@ -147,9 +151,12 @@ chatLoop agent renderer = runInputT defaultSettings loop
           | input `elem` ["exit", "quit"] -> return ()
           | null input                    -> loop
           | otherwise -> do
-              result <- liftIO $ runTurn agent (T.pack input) (onChunk renderer)
+              result <- liftIO $ withRenderer renderMode $ \renderer -> do
+                turnResult <- runTurn agent (T.pack input) (onChunk renderer)
+                onDone renderer
+                return turnResult
               case result of
-                Right _ -> liftIO $ onDone renderer
+                Right _ -> return ()
                 Left  err  -> liftIO $ TIO.putStrLn ("Error: " <> err)
               loop
 
