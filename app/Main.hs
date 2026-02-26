@@ -21,7 +21,8 @@ defaultPrompt :: T.Text
 defaultPrompt =
   "You are a helpful AI assistant with access to tools: \
   \read_file (read files), write_file (write files), exec (run shell commands). \
-  \Be concise and accurate."
+  \Be concise and accurate.\
+  \Don't use Markdown when communicated with user."
 
 confirmTool :: ToolCall -> IO Bool
 confirmTool tc = do
