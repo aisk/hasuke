@@ -27,6 +27,7 @@ dependencies:
 - bytestring
 - haskeline
 - process
+- directory
 
 ghc-options:
 - -Wall

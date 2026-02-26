@@ -40,6 +40,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , containers
+    , directory
     , haskeline
     , process
     , request
@@ -60,6 +61,7 @@ executable hasuke-exe
     , base >=4.7 && <5
     , bytestring
     , containers
+    , directory
     , haskeline
     , hasuke
     , process
@@ -82,6 +84,7 @@ test-suite hasuke-test
     , base >=4.7 && <5
     , bytestring
     , containers
+    , directory
     , haskeline
     , hasuke
     , process
