@@ -3,18 +3,19 @@
 
 module Main (main) where
 
-import Agent (Agent (..))
-import Provider (AnthropicProvider (..))
+import Agent (Agent (..), runTurn)
+import Provider (AnthropicProvider (..), LLMProvider)
 import Tool (execTool, fromList, readFileTool, writeFileTool)
 import Types (Credentials (..), ProviderConfig (..), ToolCall (..), newSession)
-import UI (AppEvent (..), runUI)
-
-import Brick.BChan (BChan, newBChan, writeBChan)
-import Control.Concurrent.MVar (newEmptyMVar, takeMVar)
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
+import Control.Monad.IO.Class (liftIO)
+import System.Console.Haskeline
 import System.Environment (lookupEnv)
 import System.Exit (die)
-import System.IO (BufferMode (..), hSetBuffering, stdout)
+import System.IO (BufferMode (..), hFlush, hSetBuffering, stdout)
 
 defaultPrompt :: T.Text
 defaultPrompt =
@@ -22,28 +23,48 @@ defaultPrompt =
   \read_file (read files), write_file (write files), exec (run shell commands). \
   \Be concise and accurate."
 
-confirmVia :: BChan AppEvent -> ToolCall -> IO Bool
-confirmVia chan tc = do
-  mvar <- newEmptyMVar
-  writeBChan chan (ToolConfirmReq tc mvar)
-  takeMVar mvar
+confirmTool :: ToolCall -> IO Bool
+confirmTool tc = do
+  TIO.putStrLn ""
+  TIO.putStr ("Tool call: " <> tc.name <> " ")
+  BSLC.putStrLn (Aeson.encode tc.arguments)
+  TIO.putStr "Execute? [Y/n] "
+  hFlush stdout
+  answer <- getLine
+  return (answer `notElem` ["n", "N"])
 
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  creds  <- loadCreds
+  creds   <- loadCreds
   apiUrl <- maybe "https://api.anthropic.com" T.pack <$> lookupEnv "ANTHROPIC_BASE_URL"
   let cfg   = ProviderConfig creds apiUrl "claude-sonnet-4-6"
       prov  = AnthropicProvider cfg
       tools = fromList [readFileTool, writeFileTool, execTool]
   sess <- newSession
-  chan <- newBChan 100
-  let agent = Agent prov tools (confirmVia chan) defaultPrompt 10 sess
-  runUI agent chan
+  let agent = Agent prov tools confirmTool defaultPrompt 10 sess
+  chatLoop agent
+
+chatLoop :: LLMProvider p => Agent p -> IO ()
+chatLoop agent = runInputT defaultSettings loop
+  where
+    loop = do
+      minput <- getInputLine "> "
+      case minput of
+        Nothing    -> return ()
+        Just input
+          | input `elem` ["exit", "quit"] -> return ()
+          | null input                    -> loop
+          | otherwise -> do
+              result <- liftIO $ runTurn agent (T.pack input) TIO.putStr
+              case result of
+                Right _ -> liftIO $ TIO.putStrLn ""
+                Left  err  -> liftIO $ TIO.putStrLn ("Error: " <> err)
+              loop
 
 loadCreds :: IO Credentials
 loadCreds = do
-  key <- lookupEnv "ANTHROPIC_API_KEY"
+  key   <- lookupEnv "ANTHROPIC_API_KEY"
   tok <- lookupEnv "ANTHROPIC_AUTH_TOKEN"
   case (key, tok) of
     (Just k, _) -> return (ApiKeyAuth (T.pack k))

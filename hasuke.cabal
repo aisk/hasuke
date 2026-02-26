@@ -25,11 +25,9 @@ source-repository head
 library
   exposed-modules:
       Agent
-      Markdown
       Provider
       Tool
       Types
-      UI
   other-modules:
       Paths_hasuke
   autogen-modules:
@@ -40,16 +38,12 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
-    , brick
     , bytestring
-    , cmark-gfm
     , containers
-    , microlens
+    , haskeline
     , process
     , request
     , text
-    , vty
-    , vty-crossplatform
   default-language: Haskell2010
 
 executable hasuke-exe
@@ -64,17 +58,13 @@ executable hasuke-exe
   build-depends:
       aeson
     , base >=4.7 && <5
-    , brick
     , bytestring
-    , cmark-gfm
     , containers
+    , haskeline
     , hasuke
-    , microlens
     , process
     , request
     , text
-    , vty
-    , vty-crossplatform
   default-language: Haskell2010
 
 test-suite hasuke-test
@@ -90,15 +80,11 @@ test-suite hasuke-test
   build-depends:
       aeson
     , base >=4.7 && <5
-    , brick
     , bytestring
-    , cmark-gfm
     , containers
+    , haskeline
     , hasuke
-    , microlens
     , process
     , request
     , text
-    , vty
-    , vty-crossplatform
   default-language: Haskell2010

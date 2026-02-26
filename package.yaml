@@ -25,12 +25,8 @@ dependencies:
 - text
 - containers
 - bytestring
-- brick
-- vty
-- vty-crossplatform
+- haskeline
 - process
-- cmark-gfm
-- microlens
 
 ghc-options:
 - -Wall
